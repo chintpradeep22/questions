@@ -1,32 +1,15 @@
-def encrypt(s, key):
-    res = ""
-    for ch in s:
-        if ch.isupper():
-            res += chr((ord(ch) + key - 65) % 26 + 65)
-        elif ch.islower():
-            res += chr((ord(ch) + key - 97) % 26 + 97)
-        else:
-            res += ch
-    return res
-
-def decrypt(s, key):
-    res = ""
-    for ch in s:
-        if ch.isupper():
-            res += chr((ord(ch) - key - 65) % 26 + 65)
-        elif ch.islower():
-            res += chr((ord(ch) - key - 97) % 26 + 97)
-        else:
-            res += ch
-    return res
-
-# Input
-s = input("Enter the string: ")
-key = int(input("Enter the key: "))
-
-# Output
-encrypted = encrypt(s, key)
-print("Encrypted:", encrypted)
-
-decrypted = decrypt(encrypted, key)
-print("Decrypted:", decrypted)
+def caesar(text, shift):
+  result = ""
+  for ch in text:
+    if ch.islower():
+      result += chr((ord(ch) - 97 + shift) % 26 + 97)
+    else:
+      result += chr((ord(ch) - 65 + shift) % 26 + 65)
+  return result
+plain  = "HELLO"
+shift=int(input("enter shift value : "))
+enc    = caesar(plain, shift)    # Encrypt with shift = +3
+dec    = caesar(enc,  -shift)    # Decrypt by using -35
+print("Plain Text :", plain)
+print("Encrypted Text :", enc)
+print("Decrypted Text :", dec)
