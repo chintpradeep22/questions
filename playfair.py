@@ -1,81 +1,47 @@
-def clean_text(text):
-    return text.replace(" ", "").lower().replace('j', 'i')
-
-def prepare_plaintext(text):
-    if len(text) % 2 != 0:
-        text += 'z'
-    return text
+import numpy as np
 
 def generate_key_matrix(key):
-    key = clean_text(key)
-    matrix = []
-    used = set()
-    for char in key:
-        if char not in used and char != 'j':
-            matrix.append(char)
-            used.add(char)
-    for char in "abcdefghijklmnopqrstuvwxyz":
-        if char not in used and char != 'j':
-            matrix.append(char)
-    key_table = [matrix[i*5:(i+1)*5] for i in range(5)]
-    return key_table
+    key = "".join(dict.fromkeys(key.upper().replace("J", "I")))  # remove duplicates
+    matrix = list(key + "".join([chr(i) for i in range(65, 91) if chr(i) not in key and chr(i) != "J"]))
+    return np.array(matrix).reshape(5, 5)
 
-def find_position(matrix, char):
-    for row in range(5):
-        for col in range(5):
-            if matrix[row][col] == char:
-                return row, col
-    return None
+def find_pos(matrix, char):
+    char = "I" if char == "J" else char
+    x, y = np.where(matrix == char)
+    return x[0], y[0]
 
-def encrypt_pair(matrix, a, b):
-    row1, col1 = find_position(matrix, a)
-    row2, col2 = find_position(matrix, b)
-    if row1 == row2:  # same row
-        return matrix[row1][(col1 + 1) % 5] + matrix[row2][(col2 + 1) % 5]
-    elif col1 == col2:  # same column
-        return matrix[(row1 + 1) % 5][col1] + matrix[(row2 + 1) % 5][col2]
-    else:  # rectangle rule
-        return matrix[row1][col2] + matrix[row2][col1]
+def playfair_encrypt(text, matrix):
+    text = text.upper().replace("J", "I").replace(" ", "")
+    if len(text) % 2 != 0: text += "X"
+    result = ""
+    for i in range(0, len(text), 2):
+        a, b = text[i], text[i+1]
+        ax, ay = find_pos(matrix, a)
+        bx, by = find_pos(matrix, b)
+        if ax == bx:
+            result += matrix[ax][(ay+1)%5] + matrix[bx][(by+1)%5]
+        elif ay == by:
+            result += matrix[(ax+1)%5][ay] + matrix[(bx+1)%5][by]
+        else:
+            result += matrix[ax][by] + matrix[bx][ay]
+    return result
 
-def decrypt_pair(matrix, a, b):
-    row1, col1 = find_position(matrix, a)
-    row2, col2 = find_position(matrix, b)
-    if row1 == row2:  # same row
-        return matrix[row1][(col1 - 1) % 5] + matrix[row2][(col2 - 1) % 5]
-    elif col1 == col2:  # same column
-        return matrix[(row1 - 1) % 5][col1] + matrix[(row2 - 1) % 5][col2]
-    else:  # rectangle rule
-        return matrix[row1][col2] + matrix[row2][col1]
+def playfair_decrypt(cipher, matrix):
+    result = ""
+    for i in range(0, len(cipher), 2):
+        a, b = cipher[i], cipher[i+1]
+        ax, ay = find_pos(matrix, a)
+        bx, by = find_pos(matrix, b)
+        if ax == bx:
+            result += matrix[ax][(ay-1)%5] + matrix[bx][(by-1)%5]
+        elif ay == by:
+            result += matrix[(ax-1)%5][ay] + matrix[(bx-1)%5][by]
+        else:
+            result += matrix[ax][by] + matrix[bx][ay]
+    return result
 
-def encrypt_playfair(plaintext, key):
-    plaintext = clean_text(plaintext)
-    plaintext = prepare_plaintext(plaintext)
-    matrix = generate_key_matrix(key)
-    ciphertext = ""
-    for i in range(0, len(plaintext), 2):
-        a = plaintext[i]
-        b = plaintext[i+1]
-        ciphertext += encrypt_pair(matrix, a, b)
-    return ciphertext
-
-def decrypt_playfair(ciphertext, key):
-    ciphertext = clean_text(ciphertext)
-    matrix = generate_key_matrix(key)
-    plaintext = ""
-    for i in range(0, len(ciphertext), 2):
-        a = ciphertext[i]
-        b = ciphertext[i+1]
-        plaintext += decrypt_pair(matrix, a, b)
-    return plaintext
-
-# Input / Output
-plaintext = input("Enter the plaintext: ")
-key = input("Enter the key: ")
-
-ciphertext = encrypt_playfair(plaintext, key)
-print(f"Plaintext: {plaintext}")
-print(f"Key: {key}")
-print(f"Ciphertext: {ciphertext}")
-
-decrypted = decrypt_playfair(ciphertext, key)
-print(f"Decrypted: {decrypted}")
+# Example
+matrix = generate_key_matrix("KEYWORD")
+cipher = playfair_encrypt("HELLO", matrix)
+print("Encrypted:", cipher)
+print("Decrypted:", playfair_decrypt(cipher, matrix))
